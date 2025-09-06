@@ -1,285 +1,277 @@
-<!DOCTYPE html>
-<html lang="en">
+<!DOCTYPE html><html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Advanced Dash Cam</title>
-  <style>
-    * { box-sizing: border-box; }
-    body {
-      margin: 0;
-      font-family: 'Segoe UI', sans-serif;
-      background: #0f0f0f;
-      color: #fff;
-      overflow: hidden;
-      transition: background 0.5s, color 0.5s;
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>A4 Photo & Specs PDF Builder</title>  <!-- Tailwind CSS CDN -->  <script src="https://cdn.tailwindcss.com"></script>  <!-- AOS (Animate On Scroll) for subtle UI animations) -->  <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet" />
+  <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>  <!-- html2pdf (html2canvas + jsPDF) for client-side PDF generation -->  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js" integrity="sha512-YcsIPW2s4lqvVg3wHkJtJc8Wq8e2t2l8sQfVnN6q5nq2WqgUkiu2z4ytYp7Vh0y9Y9w5W6gk1vQ4k9vZ0Z4n3w==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>  <style>
+    /* A4 canvas sizing for on-screen preview and print */
+    .a4 {
+      width: 210mm;
+      min-height: 297mm;
+      background: white;
+      color: #111827; /* gray-900 */
+      box-shadow: 0 10px 25px rgba(0,0,0,0.08);
     }
-    body.night {
-      background: #f5f5f5;
-      color: #000;
+    @media print {
+      @page { size: A4; margin: 0; }
+      body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      .no-print { display: none !important; }
+      .a4 { box-shadow: none; margin: 0; }
     }
-    video {
-      width: 100vw;
-      height: 100vh;
-      object-fit: cover;
-      filter: brightness(1);
-      background: #000;
-      transition: filter 0.4s ease;
-    }
-    body.night video {
-      filter: brightness(1.5) contrast(1.2);
-    }
-    .controls {
-      position: absolute;
-      bottom: 20px;
-      left: 50%;
-      transform: translateX(-50%);
-      display: flex;
-      flex-wrap: wrap;
-      justify-content: center;
-      gap: 10px;
-      background: rgba(0, 0, 0, 0.6);
-      padding: 12px;
-      border-radius: 12px;
-      z-index: 2;
-      max-width: 95vw;
-    }
-    button {
-      flex: 1 1 45%;
-      min-width: 120px;
-      background: linear-gradient(to right, #1f6feb, #265ecf);
-      color: white;
-      border: none;
-      padding: 12px 16px;
-      border-radius: 8px;
-      font-size: 15px;
-      cursor: pointer;
-      box-shadow: 0 4px 6px rgba(0,0,0,0.3);
-      transition: transform 0.2s ease, box-shadow 0.2s ease;
-    }
-    button:hover {
-      box-shadow: 0 6px 12px rgba(0,0,0,0.4);
-      transform: translateY(-2px);
-    }
-    button:active {
-      transform: scale(0.96);
-      box-shadow: 0 3px 5px rgba(0,0,0,0.2);
-    }
-    @media (max-width: 480px) {
-      button {
-        flex: 1 1 100%;
-        font-size: 14px;
-      }
-    }
-    #info {
-      position: absolute;
-      top: 10px;
-      right: 10px;
-      background: rgba(20, 20, 20, 0.7);
-      padding: 10px 15px;
-      border-radius: 8px;
-      font-size: 14px;
-      text-align: right;
-    }
-    #motion-indicator {
-      position: absolute;
-      top: 10px;
-      left: 10px;
-      padding: 8px 12px;
-      background: red;
-      color: white;
-      border-radius: 5px;
-      font-weight: bold;
-      display: none;
-      z-index: 2;
-    }
-    #saved-list {
-      position: absolute;
-      bottom: 90px;
-      left: 10px;
-      background: rgba(0, 0, 0, 0.8);
-      padding: 10px;
-      border-radius: 6px;
-      max-height: 200px;
-      overflow-y: auto;
-      font-size: 14px;
-      z-index: 2;
-    }
-    #saved-list a {
-      color: #00ffcc;
-      text-decoration: underline;
-      display: block;
-      margin-bottom: 5px;
-    }
-  </style>
-</head>
-<body>
+  </style></head>
+<body class="bg-gradient-to-br from-slate-100 to-slate-200 min-h-screen">
+  <div class="max-w-6xl mx-auto p-4 sm:p-6 lg:p-8">
+    <!-- Header -->
+    <header class="no-print flex items-center justify-between gap-4 mb-6" data-aos="fade-down">
+      <h1 class="text-2xl sm:text-3xl font-bold tracking-tight text-slate-800">A4 Photo & Specs PDF Builder</h1>
+      <div class="flex items-center gap-2">
+        <button id="btnReset" class="px-4 py-2 rounded-2xl bg-white shadow hover:shadow-md active:scale-[.99] transition">Reset</button>
+        <button id="btnDownload" class="px-4 py-2 rounded-2xl bg-slate-900 text-white shadow hover:shadow-lg active:scale-[.99] transition">Download PDF</button>
+      </div>
+    </header><!-- Controls Panel -->
+<section class="no-print grid md:grid-cols-2 gap-6 mb-8" data-aos="fade-up">
+  <div class="space-y-4">
+    <!-- Image uploader -->
+    <label class="block text-sm font-medium text-slate-700">Upload Photo</label>
+    <div id="dropzone" class="relative border-2 border-dashed rounded-2xl p-6 bg-white shadow-sm hover:shadow transition flex items-center justify-center text-center cursor-pointer">
+      <input id="photoInput" type="file" accept="image/*" class="absolute inset-0 opacity-0 cursor-pointer" />
+      <div>
+        <div class="text-sm text-slate-500">Drag & drop or click to upload</div>
+        <div class="text-xs text-slate-400 mt-1">JPG, PNG, WEBP • Recommended ≥ 1200px wide</div>
+      </div>
+    </div>
 
-  <div id="motion-indicator">⚠️ Motion Detected</div>
-  <video id="video" autoplay muted playsinline></video>
+    <!-- Description -->
+    <label class="block text-sm font-medium text-slate-700 mt-4">Description</label>
+    <input id="desc" type="text" placeholder="Short description (e.g., Premium kraft sheet)" class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 shadow-sm focus:outline-none focus:ring-2 focus:ring-slate-300" />
 
-  <div class="controls">
-    <button onclick="startRecording()">Start</button>
-    <button onclick="stopRecording()">Stop</button>
-    <button onclick="downloadRecording()">Download</button>
-    <button onclick="saveToStorage()">Save</button>
-    <button onclick="toggleNightMode()">Night Mode</button>
+    <!-- GSM & Material & Like -->
+    <div class="grid grid-cols-3 gap-3">
+      <div>
+        <label class="block text-sm font-medium text-slate-700">GSM</label>
+        <input id="gsm" type="text" placeholder="e.g., 120" class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 shadow-sm focus:ring-2 focus:ring-slate-300" />
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-slate-700">Material</label>
+        <input id="material" type="text" placeholder="e.g., Kraft Paper" class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 shadow-sm focus:ring-2 focus:ring-slate-300" />
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-slate-700">Like</label>
+        <input id="like" type="text" placeholder="e.g., Eco-friendly" class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 shadow-sm focus:ring-2 focus:ring-slate-300" />
+      </div>
+    </div>
+
+    <!-- Notes -->
+    <label class="block text-sm font-medium text-slate-700 mt-4">Notes (unlimited)</label>
+    <textarea id="notes" rows="6" placeholder="Type any length of notes here..." class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 shadow-sm focus:ring-2 focus:ring-slate-300"></textarea>
   </div>
 
-  <div id="info">
-    <div>Speed: <span id="speed">0</span> km/h</div>
-    <div>Distance: <span id="distance">0</span> km</div>
-    <div>Duration: <span id="time">00:00</span></div>
+  <!-- Layout options -->
+  <div class="space-y-4">
+    <div class="grid grid-cols-2 gap-3">
+      <div>
+        <label class="block text-sm font-medium text-slate-700">Photo Size</label>
+        <select id="photoSize" class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 shadow-sm focus:ring-2 focus:ring-slate-300">
+          <option value="sm">Small</option>
+          <option value="md" selected>Medium</option>
+          <option value="lg">Large</option>
+        </select>
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-slate-700">Filename</label>
+        <input id="filename" type="text" value="spec-sheet" class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 shadow-sm focus:ring-2 focus:ring-slate-300" />
+      </div>
+    </div>
+    <div>
+      <label class="block text-sm font-medium text-slate-700">Theme</label>
+      <div class="flex gap-2 mt-1">
+        <button data-theme="classic" class="themeBtn px-3 py-2 rounded-xl bg-white border border-slate-200 shadow-sm">Classic</button>
+        <button data-theme="soft" class="themeBtn px-3 py-2 rounded-xl bg-white border border-slate-200 shadow-sm">Soft</button>
+        <button data-theme="edge" class="themeBtn px-3 py-2 rounded-xl bg-white border border-slate-200 shadow-sm">Edge</button>
+      </div>
+    </div>
+    <p class="text-xs text-slate-500">Tip: Everything inside the A4 preview will be exported to a PDF in exact A4 size with print-safe margins.</p>
+  </div>
+</section>
+
+<!-- A4 Preview (what gets exported) -->
+<main id="sheet" class="a4 mx-auto rounded-3xl p-[18mm] md:p-[20mm] relative overflow-hidden" data-aos="zoom-in">
+  <!-- Decorative background for themes -->
+  <div id="themeBg" class="absolute inset-0 pointer-events-none"></div>
+
+  <!-- Content wrapper centered vertically -->
+  <div class="relative h-full flex items-center">
+    <div class="w-full">
+      <!-- Photo centered -->
+      <div class="w-full flex justify-center mb-6">
+        <img id="preview" src="" alt="Preview" class="hidden rounded-2xl shadow-md object-contain transition-all duration-300" />
+      </div>
+
+      <!-- Text content in the middle -->
+      <div class="text-center max-w-[150mm] mx-auto">
+        <h2 id="outDesc" class="text-2xl font-semibold tracking-tight mb-3"></h2>
+
+        <div class="grid grid-cols-3 gap-3 text-left text-sm">
+          <div class="rounded-xl border border-slate-200 p-3 bg-white/70 backdrop-blur">
+            <div class="text-xs uppercase tracking-wide text-slate-500">GSM</div>
+            <div id="outGsm" class="font-medium"></div>
+          </div>
+          <div class="rounded-xl border border-slate-200 p-3 bg-white/70 backdrop-blur">
+            <div class="text-xs uppercase tracking-wide text-slate-500">Material</div>
+            <div id="outMaterial" class="font-medium"></div>
+          </div>
+          <div class="rounded-xl border border-slate-200 p-3 bg-white/70 backdrop-blur">
+            <div class="text-xs uppercase tracking-wide text-slate-500">Like</div>
+            <div id="outLike" class="font-medium"></div>
+          </div>
+        </div>
+
+        <div class="rounded-2xl border border-slate-200 p-4 mt-4 text-left bg-white/70 backdrop-blur">
+          <div class="text-xs uppercase tracking-wide text-slate-500 mb-1">Notes</div>
+          <div id="outNotes" class="whitespace-pre-wrap leading-relaxed"></div>
+        </div>
+      </div>
+    </div>
   </div>
 
-  <div id="saved-list">
-    <strong>Saved Videos:</strong>
-    <div id="videos"></div>
-  </div>
+  <!-- Footer watermark / page label -->
+  <footer class="absolute bottom-4 left-0 right-0 text-center text-[10px] text-slate-400 select-none">
+    Generated with A4 Photo & Specs PDF Builder
+  </footer>
+</main>
 
-  <canvas id="motionCanvas" style="display:none;"></canvas>
+  </div>  <script>
+    AOS.init({ once: true, duration: 500, easing: 'ease-out' });
 
-  <script>
-    const video = document.getElementById('video');
-    const motionCanvas = document.getElementById('motionCanvas');
-    const motionCtx = motionCanvas.getContext('2d');
-    const motionIndicator = document.getElementById('motion-indicator');
-    const speedEl = document.getElementById('speed');
-    const distanceEl = document.getElementById('distance');
-    const timeEl = document.getElementById('time');
-    const videosList = document.getElementById('videos');
+    const $ = (s) => document.querySelector(s);
+    const photoInput = $('#photoInput');
+    const preview = $('#preview');
+    const dropzone = $('#dropzone');
+    const desc = $('#desc');
+    const gsm = $('#gsm');
+    const material = $('#material');
+    const like = $('#like');
+    const notes = $('#notes');
 
-    let stream, mediaRecorder, chunks = [];
-    let watchId, startTime, timerInterval;
-    let lastCoords = null, totalDistance = 0;
-    let recordingBlob = null, lastFrame = null;
+    const outDesc = $('#outDesc');
+    const outGsm = $('#outGsm');
+    const outMaterial = $('#outMaterial');
+    const outLike = $('#outLike');
+    const outNotes = $('#outNotes');
 
-    async function initCamera() {
-      try {
-        stream = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode: { ideal: "environment" } }, audio: true
-        });
-        video.srcObject = stream;
-        detectMotion();
-        loadSavedVideos();
-      } catch (err) {
-        alert("Camera or microphone access denied.");
-        console.error(err);
-      }
-    }
+    const photoSize = $('#photoSize');
+    const filename = $('#filename');
+    const btnDownload = $('#btnDownload');
+    const btnReset = $('#btnReset');
+    const themeBg = $('#themeBg');
+    const sheet = $('#sheet');
 
-    function startRecording() {
-      chunks = [];
-      mediaRecorder = new MediaRecorder(stream);
-      mediaRecorder.ondataavailable = e => chunks.push(e.data);
-      mediaRecorder.onstop = () => recordingBlob = new Blob(chunks, { type: 'video/webm' });
-      mediaRecorder.start();
-      startTime = Date.now();
-      startTimer();
-      watchLocation();
-    }
+    // Live binding from inputs to preview fields
+    const bindLive = () => {
+      outDesc.textContent = desc.value;
+      outGsm.textContent = gsm.value;
+      outMaterial.textContent = material.value;
+      outLike.textContent = like.value;
+      outNotes.textContent = notes.value;
+    };
+    ['input', 'keyup', 'change'].forEach(ev => {
+      [desc, gsm, material, like, notes].forEach(el => el.addEventListener(ev, bindLive));
+    });
 
-    function stopRecording() {
-      if (mediaRecorder && mediaRecorder.state === "recording") {
-        mediaRecorder.stop();
-        clearInterval(timerInterval);
-        if (watchId) navigator.geolocation.clearWatch(watchId);
-      }
-    }
-
-    function downloadRecording() {
-      if (!recordingBlob) return alert("No recording to download.");
-      const url = URL.createObjectURL(recordingBlob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = 'dashcam_' + Date.now() + '.webm';
-      a.click();
-    }
-
-    function saveToStorage() {
-      if (!recordingBlob) return alert("Nothing to save.");
-      const id = 'dashcam_' + Date.now();
+    // Image upload & preview
+    function setPhoto(file) {
+      if (!file) return;
       const reader = new FileReader();
-      reader.onload = function () {
-        localStorage.setItem(id, reader.result);
-        loadSavedVideos();
+      reader.onload = (e) => {
+        preview.src = e.target.result;
+        preview.classList.remove('hidden');
+        sizePhoto();
       };
-      reader.readAsDataURL(recordingBlob);
+      reader.readAsDataURL(file);
     }
 
-    function loadSavedVideos() {
-      videosList.innerHTML = '';
-      for (let i = 0; i < localStorage.length; i++) {
-        const key = localStorage.key(i);
-        if (key.startsWith('dashcam_')) {
-          const url = localStorage.getItem(key);
-          const a = document.createElement('a');
-          a.href = url;
-          a.download = key + '.webm';
-          a.innerText = '📼 ' + key;
-          videosList.appendChild(a);
-        }
+    dropzone.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      dropzone.classList.add('ring-2', 'ring-slate-300');
+    });
+    dropzone.addEventListener('dragleave', () => {
+      dropzone.classList.remove('ring-2', 'ring-slate-300');
+    });
+    dropzone.addEventListener('drop', (e) => {
+      e.preventDefault();
+      dropzone.classList.remove('ring-2', 'ring-slate-300');
+      const file = e.dataTransfer.files?.[0];
+      setPhoto(file);
+    });
+    photoInput.addEventListener('change', (e) => setPhoto(e.target.files?.[0]));
+
+    // Photo size control (in millimeters relative to A4 width)
+    function sizePhoto() {
+      const sizeMap = { sm: 60, md: 90, lg: 130 }; // width in mm
+      const mm = sizeMap[photoSize.value] || 90;
+      // Convert mm to pixels based on 96 DPI approximation: 1in=25.4mm => 1mm≈3.78px
+      const px = Math.round(mm * 3.78);
+      preview.style.width = px + 'px';
+      preview.style.maxHeight = Math.round(160 * 3.78) + 'px'; // keep reasonable height
+    }
+    photoSize.addEventListener('change', sizePhoto);
+
+    // Theme backgrounds
+    const applyTheme = (key) => {
+      themeBg.className = 'absolute inset-0 pointer-events-none';
+      if (key === 'classic') {
+        themeBg.innerHTML = '';
+        sheet.classList.remove('bg-slate-50');
+        sheet.classList.add('bg-white');
+      } else if (key === 'soft') {
+        themeBg.innerHTML = '<div class="absolute -top-24 -right-24 w-80 h-80 rounded-full bg-sky-100"></div>' +
+                            '<div class="absolute -bottom-24 -left-24 w-80 h-80 rounded-full bg-rose-100"></div>';
+        sheet.classList.add('bg-white');
+      } else if (key === 'edge') {
+        themeBg.innerHTML = '<div class="absolute inset-0 opacity-[0.06]" style="background: repeating-linear-gradient(135deg, #0f172a 0 2px, transparent 2px 8px);"></div>';
+        sheet.classList.add('bg-white');
       }
-    }
+    };
+    document.querySelectorAll('.themeBtn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.preventDefault();
+        document.querySelectorAll('.themeBtn').forEach(b => b.classList.remove('ring-2', 'ring-slate-300'));
+        btn.classList.add('ring-2', 'ring-slate-300');
+        applyTheme(btn.dataset.theme);
+      });
+    });
+    applyTheme('classic');
 
-    function toggleNightMode() {
-      document.body.classList.toggle("night");
-    }
+    // Download to PDF (A4)
+    btnDownload.addEventListener('click', async () => {
+      bindLive();
+      const opt = {
+        margin:       [10, 10, 10, 10], // mm (top, left, bottom, right)
+        filename:     (filename.value?.trim() || 'spec-sheet') + '.pdf',
+        image:        { type: 'jpeg', quality: 0.98 },
+        html2canvas:  { scale: 2, useCORS: true, backgroundColor: null },
+        jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+      };
+      const source = document.getElementById('sheet');
+      // Temporarily add a subtle outline to ensure full capture
+      source.style.outline = '1px solid transparent';
+      await html2pdf().from(source).set(opt).save();
+      source.style.outline = '';
+    });
 
-    function startTimer() {
-      timeEl.textContent = "00:00";
-      timerInterval = setInterval(() => {
-        const diff = Math.floor((Date.now() - startTime) / 1000);
-        const mins = String(Math.floor(diff / 60)).padStart(2, '0');
-        const secs = String(diff % 60).padStart(2, '0');
-        timeEl.textContent = `${mins}:${secs}`;
-      }, 1000);
-    }
+    // Reset
+    btnReset.addEventListener('click', () => {
+      [desc, gsm, material, like, notes].forEach(el => el.value = '');
+      outDesc.textContent = outGsm.textContent = outMaterial.textContent = outLike.textContent = outNotes.textContent = '';
+      preview.src = '';
+      preview.classList.add('hidden');
+      photoSize.value = 'md';
+      filename.value = 'spec-sheet';
+      applyTheme('classic');
+      document.querySelectorAll('.themeBtn').forEach(b => b.classList.remove('ring-2', 'ring-slate-300'));
+    });
 
-    function watchLocation() {
-      if (!navigator.geolocation) return;
-      watchId = navigator.geolocation.watchPosition(pos => {
-        const { latitude, longitude, speed } = pos.coords;
-        if (lastCoords) {
-          const d = haversine(lastCoords.lat, lastCoords.lon, latitude, longitude);
-          totalDistance += d;
-        }
-        lastCoords = { lat: latitude, lon: longitude };
-        speedEl.textContent = ((speed || 0) * 3.6).toFixed(1);
-        distanceEl.textContent = totalDistance.toFixed(2);
-      }, err => console.warn("GPS error:", err), { enableHighAccuracy: true });
-    }
-
-    function haversine(lat1, lon1, lat2, lon2) {
-      const R = 6371;
-      const dLat = (lat2 - lat1) * Math.PI / 180;
-      const dLon = (lon2 - lon1) * Math.PI / 180;
-      const a = Math.sin(dLat/2)**2 + Math.cos(lat1*Math.PI/180) * Math.cos(lat2*Math.PI/180) * Math.sin(dLon/2)**2;
-      return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-    }
-
-    function detectMotion() {
-      setInterval(() => {
-        if (!video.videoWidth || !video.videoHeight) return;
-        motionCanvas.width = video.videoWidth;
-        motionCanvas.height = video.videoHeight;
-        motionCtx.drawImage(video, 0, 0, motionCanvas.width, motionCanvas.height);
-        const frame = motionCtx.getImageData(0, 0, motionCanvas.width, motionCanvas.height);
-        if (lastFrame) {
-          let changed = 0;
-          for (let i = 0; i < frame.data.length; i += 4) {
-            if (Math.abs(frame.data[i] - lastFrame.data[i]) > 20) changed++;
-          }
-          if (changed > 10000) {
-            motionIndicator.style.display = 'block';
-            setTimeout(() => motionIndicator.style.display = 'none', 1000);
-          }
-        }
-        lastFrame = frame;
-      }, 700);
-    }
-
-    window.onload = initCamera;
-  </script>
-</body>
+    // Initialize
+    bindLive();
+  </script></body>
 </html>
